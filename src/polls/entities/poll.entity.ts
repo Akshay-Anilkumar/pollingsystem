@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, JoinTable, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, ManyToMany, OneToMany, JoinTable, CreateDateColumn } from 'typeorm';
 import { User } from '../../users/user.entity';
+import { Vote } from './vote.entity';
 
 @Entity()
 export class Poll {
@@ -30,4 +31,10 @@ export class Poll {
   @ManyToMany(() => User)
   @JoinTable()
   allowedUsers: User[];
+
+  @ManyToOne(() => User)
+  creator: User;
+
+  @OneToMany(() => Vote, (vote) => vote.poll, { cascade: true, onDelete: 'CASCADE' })
+  votes: Vote[];
 }

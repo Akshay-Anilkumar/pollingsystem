@@ -75,7 +75,9 @@ export class PollsService {
     const poll = await this.pollRepo.findOne({ where: { id }, relations: ['createdBy'] });
     if (!poll) throw new NotFoundException('Poll not found');
     if (poll.createdBy.id !== adminId) throw new ForbiddenException('Not owner');
-    return this.pollRepo.remove(poll);
+    await this.voteRepo.delete({ poll: { id } });
+    await this.pollRepo.delete(id);
+    return { message: 'Poll deleted' };
   }
 
   async vote(pollId: number, userId: number, choice: string) {
@@ -112,7 +114,7 @@ export class PollsService {
     return { poll: { id: poll.id, title: poll.title, options: poll.options }, tally };
   }
 
-  @Cron('*/1 * * * *') // every minute
+  @Cron('*/1 * * * *')
   async expirePolls() {
     const now = new Date();
     await this.pollRepo.update({ expiresAt: LessThan(now), isActive: true }, { isActive: false });
