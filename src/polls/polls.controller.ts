@@ -49,7 +49,7 @@ export class PollsController {
   }
 
   @Get(':id/results')
-  results(@Param('id') id: string) {
-    return this.pollsService.getResults(Number(id));
+  results(@Param('id') id: string, @Request() req: any) {
+    return this.pollsService.getResults(Number(id), req.user);
   }
 }

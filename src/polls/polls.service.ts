@@ -104,15 +104,21 @@ export class PollsService {
     return this.voteRepo.save(vote);
   }
 
-  async getResults(id: number) {
-    const poll = await this.pollRepo.findOne({ where: { id } });
-    if (!poll) throw new NotFoundException('Poll not found');
-
-    const votes = await this.voteRepo.find({ where: { poll: { id } } as any });
-    const tally = poll.options.reduce((acc, opt) => ({ ...acc, [opt]: 0 }), {} as Record<string, number>);
-    for (const v of votes) tally[v.choice] = (tally[v.choice] || 0) + 1;
-    return { poll: { id: poll.id, title: poll.title, options: poll.options }, tally };
+  async getResults(id: number, user: any) {
+  const poll = await this.pollRepo.findOne({ where: { id }, relations: ['allowedUsers'] });
+  if (!poll) throw new NotFoundException('Poll not found');
+  
+  if (!poll.isPublic) {
+    const allowed = poll.allowedUsers?.some(u => u.id === user.id) || false;
+    if (!allowed && user.role !== 'ADMIN') throw new ForbiddenException('Not allowed to view results');
   }
+
+  const votes = await this.voteRepo.find({ where: { poll: { id } } as any });
+  const tally = poll.options.reduce((acc, opt) => ({ ...acc, [opt]: 0 }), {} as Record<string, number>);
+  for (const v of votes) tally[v.choice] = (tally[v.choice] || 0) + 1;
+  return { poll: { id: poll.id, title: poll.title, options: poll.options }, tally };
+}
+
 
   @Cron('*/1 * * * *')
   async expirePolls() {
